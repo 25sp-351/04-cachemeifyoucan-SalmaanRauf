@@ -1,6 +1,6 @@
 #Full transparency: I had copilot make the script for me based off my TESTS.md file 
 #just to save ur time and mine, i Was ending up making extra files for each test case and it was a pain to manage
-#this way it autocleans
+#this way it also autocleans, and i dont need to make 2 Tests.md files as planned 
 
 # Initiating the procedural generation of test piece configuration files...
 echo "Creating test piece files..."
