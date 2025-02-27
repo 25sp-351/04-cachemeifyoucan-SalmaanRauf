@@ -1,105 +1,143 @@
-//sorry for overzealous commenting, this is just how i code when learning new langauge. will reduce as we go on.
-
-//FOCUS: KISS, readable code, should flow well and easy to understand without too many comments.
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include "cache.h"
 
-// 2. read input lengths/vals, stores in arrays
+#define MAX_PIECES 1000
 
-int read_input(int lengths[], int values[]) {
-    int count = 0;
-    printf("Enter lengths and values, following this format: '<length>, <value>'");
-    //The two %d are to expect integers, sep by commas. EOF = end of user input
-    while (scanf("%d, %d", &lengths[count], &values[count]) != EOF) {
-        count ++;
+// function to read leng/val pairs from a file
+int read_length_value_pairs(const char *filename, int lengths[], int values[]) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        perror("Error opening file");
+        return -1;
     }
+    int count = 0;
+    while (fscanf(file, "%d, %d", &lengths[count], &values[count]) == 2) {
+        count++;
+    }
+    fclose(file);
     return count;
 }
 
-//3 recursively calc max value that you can get from cutting rod
-int max_value(int rod_length, int lengths[], int values[], int count, int used[]) {
-    // base case
+// structure to track solution
+typedef struct {
+    int used[MAX_PIECES];
+    int max_val;
+} Solution;
+
+// function to calc max val using caching
+Solution max_value_with_cuts(int rod_length, int lengths[], int values[], int count) {
+    Solution solution = {0};
+    
     if (rod_length == 0) {
-        return 0; 
+        return solution;
     }
-    int max_val = 0;
-    int best_piece = -1;
-
-    // This is our for loop from beginning to end, we use i++ like in c++ for iter
-    for (int i = 0; i < count; i++) {
-        // checking if our current piece can fit in rod
-        if (rod_length >= lengths[i]) {
-            // temp array to store usage for this branch
-            int temp_used[100] = {0}; 
-            for (int j = 0; j < count; j++) {
-                temp_used[j] = used[j]; // copy the current state of "used"
-            }
-
-            // recursively try cutting rod with this piece, cal val
-            int val = values[i] + max_value(rod_length - lengths[i], lengths, values, count, temp_used);
-
-            // IF the value is better, update max_val and the piece
-            if (val > max_val) {
-                max_val = val;
-                best_piece = i; // save which piece gave the best result
-
-                // copy the temp array back to the main "used" array
-                for (int j = 0; j < count; j++) {
-                    used[j] = temp_used[j];
+    
+    int cached_val;
+    if (cache_get(rod_length, &cached_val)) {
+        solution.max_val = cached_val;
+        // can't cache cutting pattern, just value
+        // so we need to recalculate the cuts
+        
+        int remaining = rod_length;
+        while (remaining > 0) {
+            int best_piece = -1;
+            int best_val = 0;
+            
+            for (int i = 0; i < count; i++) {
+                if (remaining >= lengths[i]) {
+                    int next_remaining = remaining - lengths[i];
+                    int next_val;
+                    
+                    if (next_remaining == 0) {
+                        next_val = 0;
+                    } else if (cache_get(next_remaining, &next_val)) {
+                        // use cached value
+                    } else {
+                        // shouldn't happen if cached properly
+                        Solution temp = max_value_with_cuts(next_remaining, lengths, values, count);
+                        next_val = temp.max_val;
+                    }
+                    
+                    int total_val = values[i] + next_val;
+                    if (total_val > best_val) {
+                        best_val = total_val;
+                        best_piece = i;
+                    }
                 }
             }
+            
+            if (best_piece == -1) {
+                // no more cuts possible
+                break;
+            }
+            
+            solution.used[best_piece]++;
+            remaining -= lengths[best_piece];
+        }
+        
+        return solution;
+    }
+    
+    int best_piece = -1;
+    for (int i = 0; i < count; i++) {
+        if (rod_length >= lengths[i]) {
+            Solution temp = max_value_with_cuts(rod_length - lengths[i], lengths, values, count);
+            int val = values[i] + temp.max_val;
+            
+            if (val > solution.max_val) {
+                solution.max_val = val;
+                best_piece = i;
+                
+                // copy used array from temp
+                memcpy(solution.used, temp.used, sizeof(int) * MAX_PIECES);
+            }
         }
     }
-
-    // if we found a best piece, increment its usage
+    
     if (best_piece != -1) {
-        used[best_piece]++;
+        solution.used[best_piece]++;
     }
-
-    return max_val; // return the best value for this rod length
+    
+    cache_put(rod_length, solution.max_val);
+    return solution;
 }
 
-
-// 1 putting it all together
 int main(int argc, char *argv[]) {
-    // first check if user gave us the args we want as ip
     if (argc != 2) {
-        printf("Please follow formatting instructions mentioned above.");
-        return 1; // exit code
+        printf("Usage: %s <length_value_file>\n", argv[0]);
+        return 1;
+    }
+    
+    int lengths[MAX_PIECES], values[MAX_PIECES];
+    int count = read_length_value_pairs(argv[1], lengths, values);
+    if (count < 0) {
+        return 1;
     }
 
-    // converting the rod length str to int using atoi
-    int rod_length = atoi(argv[1]);
+    cache_init();
 
-    // arrays to stores lengs and vals. arrays require set size, just to be safe i put 1000.
-    // complexity wise they should be smaller but complexity is not the focus here
-    int lengths[1000], values[1000];
-    int used[1000] = {0}; // NEW CODE: Array to track how many pieces of each length are used
-
-    // now we use the functions we made earlier
-    int count = read_input(lengths, values);
-
-    // getting the total value of the rod by calling max val function
-    int total_val = max_value(rod_length, lengths, values, count, used);
-
-    printf("Cutting list:\n");
-    for (int i = 0; i < count; i++) {
-        if (used[i] > 0) { 
-                //only printing info if we used it
-            printf("%d @ %d = %d\n", used[i], lengths[i], used[i] * values[i]);
+    int rod_length;
+    while (scanf("%d", &rod_length) == 1) {
+        Solution solution = max_value_with_cuts(rod_length, lengths, values, count);
+        
+        printf("Cutting list:\n");
+        for (int i = 0; i < count; i++) {
+            if (solution.used[i] > 0) {
+                printf("%d @ %d = %d\n", solution.used[i], lengths[i], solution.used[i] * values[i]);
+            }
         }
+        
+        // calculate remainder
+        int remainder = rod_length;
+        for (int i = 0; i < count; i++) {
+            remainder -= solution.used[i] * lengths[i];
+        }
+        printf("Remainder: %d\n", remainder);
+        printf("Value: %d\n", solution.max_val);
     }
 
-    //calculate remainder by subtracting used pieces
-    int remainder = rod_length;
-    for (int i = 0; i < count; i++) {
-        remainder -= used[i] * lengths[i];
-    }
-    printf("Remainder: %d\n", remainder);
-
-    // print the final total value of the rod
-    printf("Value: %d\n", total_val);
-
-    return 0; // exiting
+    cache_free();
+    return 0;
 }

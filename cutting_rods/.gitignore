@@ -5,3 +5,5 @@
 .obj
 .exe
 node_modules/
+*.dSYM
+

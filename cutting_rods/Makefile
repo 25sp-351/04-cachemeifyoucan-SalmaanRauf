@@ -1,13 +1,16 @@
-# Compiler options
-CFLAGS = -g -Wall
+CC = gcc
+CFLAGS = -Wall
 
-# Default target
-all: main
+all: rod_cut_lru rod_cut_fifo # make both versions
 
-# Rule for building the main executable
-main: main.c
-	$(CC) $(CFLAGS) -o main main.c
+# lru version
+rod_cut_lru: main.c cache_lru.c cache.h
+	$(CC) $(CFLAGS) -o rod_cut_lru main.c cache_lru.c
 
-# Rule for cleaning up build artifacts
+# fifo version
+rod_cut_fifo: main.c cache_fifo.c cache.h
+	$(CC) $(CFLAGS) -o rod_cut_fifo main.c cache_fifo.c
+
+# cleanup
 clean:
-	rm -f main
+	rm -f rod_cut_lru rod_cut_fifo
