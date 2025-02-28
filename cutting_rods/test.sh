@@ -2,31 +2,26 @@
 #just to save ur time and mine, i Was ending up making extra files for each test case and it was a pain to manage
 #this way it also autocleans, and i dont need to make 2 Tests.md files as planned 
 
-# Initiating the procedural generation of test piece configuration files...
+# I removed all the comments, more readable, and the AI is way too Overzealous with commenting
+# I also went through and understood the process - more simple than i anticipated :)
+
 echo "Creating test piece files..."
 
-# Test Case identifiers 1, 6, and 7: Representing a singular piece type with dimensions optimized for various test scenarios
 echo "5, 10" > test_pieces1.txt
 
-# Test Case identifier 2: Representing a heterogeneous collection of piece types designed to evaluate exact fitting algorithms
 echo "3, 5" > test_pieces2.txt
 echo "7, 8" >> test_pieces2.txt
 
-# Test Case identifier 3: Representing piece dimensions intentionally exceeding certain rod length parameters to evaluate boundary conditions
 echo "5, 10" > test_pieces3.txt
 echo "6, 12" >> test_pieces3.txt
 
-# Test Case identifier 4: Representing minimal piece dimensions to evaluate algorithm behavior with small-scale inputs
 echo "2, 3" > test_pieces4.txt
 
-# Test Case identifiers 5, 8, and 9: Representing a strategic combination of piece dimensions to evaluate multiple optimization scenarios
 echo "5, 10" > test_pieces5.txt
 echo "3, 5" >> test_pieces5.txt
 
-# Executing the compilation process for both algorithmic implementations to ensure binary executables are current
 make
 
-# Functional procedure definition for executing individual test scenarios with appropriate parameterization
 run_test() {
     local test_num=$1
     local rod_length=$2
@@ -45,7 +40,6 @@ run_test() {
     echo "----------------------------------------"
 }
 
-# Systematic execution of all predefined test scenarios to comprehensively evaluate algorithm performance
 run_test 1 10 test_pieces1.txt "Single piece type with dimensions precisely matching rod length requirements"
 run_test 2 12 test_pieces2.txt "Multiple heterogeneous piece types configured for exact dimensional compatibility"
 run_test 3 4 test_pieces3.txt "All available piece types exceed dimensional constraints of the target rod"
@@ -56,7 +50,6 @@ run_test 7 91 test_pieces1.txt "Extended rod length with calculated remainder to
 run_test 8 73 test_pieces5.txt "Moderate rod length with heterogeneous piece types to evaluate mid-range optimization"
 run_test 9 29 test_pieces5.txt "Reduced rod length with heterogeneous piece types resulting in calculated remainder"
 
-# Executing post-test cleanup procedures to eliminate temporary configuration files and restore initial system state
 echo "Initiating cleanup procedures for temporary test configuration files..."
 rm -f test_pieces*.txt
 
